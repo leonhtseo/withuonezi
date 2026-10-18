@@ -75,7 +75,7 @@ const P=`너는 아이돌 팬 소통앱 위쥬의 팬덤 시뮬레이터다. 가
 try{const j=await ai(P,img);
 for(const r of j.replies){await sleep(500+Math.random()*900);ty.remove();add({k:'fan',nick:r.n,t:r.t,type:'text'});feed.append(ty);down()}
 ty.remove();if(tg){tg.rx=j.rx;paint(tg);save()}}
-catch(e){ty.remove();const x=H('div','hint','AI 응답에 실패했어요. 설정의 API 키와 인터넷 연결, 사용량 한도를 확인해 주세요.');feed.append(x);down()}
+catch(e){ty.remove();const detail=String(e.message||e).slice(0,450).replaceAll(API_KEY,'[비공개]');const x=H('div','hint','AI 응답 실패: '+detail);feed.append(x);down();console.error('WITHU AI error:',e)}
 busy=0;$('#send').disabled=false}
 function send(){const t=$('#in').value.trim();if(busy||(!t&&!att))return;const pb=pend,m={k:'me',type:att||'text',t,q:R,d:pb&&pb.d||Math.floor(8+Math.random()*40),img:pb&&pb.img};
 $('#in').value='';const cap={photo:'사진을 보냄',video:'영상을 보냄(대표 프레임 이미지 첨부)',voice:'보이스 메시지를 보냄(말한 내용이 글)'}[m.type]||'텍스트 메시지를 보냄';
@@ -93,8 +93,8 @@ async function ai(prompt,img){
  if(!API_KEY){$('#gear').click();throw Error('API 키를 설정해 주세요')}
  const parts=[{text:prompt}];
  if(img){const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(img)});parts.push({inline_data:{mime_type:img.type||'image/jpeg',data}})}
- const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':API_KEY},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:0.9}})});
- const out=await res.json();if(!res.ok)throw Error(out.error?.message||'AI 요청 실패');
+ const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':API_KEY},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:0.9}})});
+ const out=await res.json().catch(()=>{throw Error('서버 응답을 읽을 수 없습니다 (HTTP '+res.status+')')});if(!res.ok)throw Error('HTTP '+res.status+': '+(out.error?.message||'AI 요청 실패'));
  const raw=out.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
  try{return JSON.parse(raw)}catch(e){return JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0]||'{}')}
 }
